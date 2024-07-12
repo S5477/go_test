@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  application-test:
+    container_name: app-test
+    build:
+      context: .
+      dockerfile: ./deploy/docker/app/Dockerfile
+    depends_on:
+      - pgsql
+    env_file:
+      - .env
+  pgsql:
+    image: postgres:16
+    container_name: pgsql
+    env_file:
+      - .env
+    environment:
+        PGPASSWORD: '${PG_PASSWORD:-secret}'
+        POSTGRES_DB: '${PG_DATABASE_NAME}'
+        POSTGRES_USER: '${PG_USER}'
+        POSTGRES_PASSWORD: '${PG_PASSWORD:-secret}'
+    ports:
+      - "5432:5432"
+    healthcheck:
+        test: [ 'CMD', 'pg_isready', '-q', '-d', '${PG_DATABASE_NAME}', '-U', '${PG_USER}' ]
+        retries: 3
+        timeout: 5s
+    restart: always
+  migrator:
+    build:
+      context: .
+      dockerfile: ./deploy/docker/migration/Dockerfile
+    container_name: migrator
+    image: migrator
+    restart: on-failure
+    environment:
+      DB_HOST: pgsql
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    
