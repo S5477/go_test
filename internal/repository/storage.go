@@ -2,34 +2,19 @@ package repository
 
 import (
 	"context"
-	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"net"
-	"time"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"log"
 )
 
-func InitDBConn(ctx context.Context) (dbpool *pgxpool.Pool, err error) {
-	url := "postgres://postgres:password@localhost:5432/postgres?sslmode=disable"
-	cfg, err := pgxpool.ParseConfig(url)
-	if err != nil {
-		err = fmt.Errorf("failed to parse pg config: %w", err)
-		return
-	}
-	cfg.MaxConns = int32(5)
-	cfg.MinConns = int32(1)
-	cfg.HealthCheckPeriod = 1 * time.Minute
-	cfg.MaxConnLifetime = 24 * time.Hour
-	cfg.MaxConnIdleTime = 30 * time.Minute
-	cfg.ConnConfig.ConnectTimeout = 2 * time.Second
-	cfg.ConnConfig.DialFunc = (&net.Dialer{
-		KeepAlive: cfg.HealthCheckPeriod,
-		Timeout:   cfg.ConnConfig.ConnectTimeout,
-	}).DialContext
+func InitDBConn(ctx context.Context) *gorm.DB {
+	dbURL := "postgres://user:password@pgsql:5432/app"
 
-	dbpool, err = pgxpool.ConnectConfig(ctx, cfg)
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+
 	if err != nil {
-		err = fmt.Errorf("failed to connect config: %w", err)
-		return
+		log.Fatalln(err)
 	}
-	return
+
+	return db
 }

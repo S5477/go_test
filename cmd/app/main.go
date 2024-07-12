@@ -1,7 +1,9 @@
 package main
 
-import "time"
+import (
+	"test/internal/app"
+)
 
 func main() {
-	time.Sleep(time.Hour)
+	app.Run()
 }
